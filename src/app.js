@@ -82,7 +82,7 @@ app.get("/messages", (req, res) => {
     const user = req.headers.user
     const limit = Number(req.query.limit)
     console.log(limit)
-    if (limit === 0 || !Number.isInteger(limit)) return res.sendStatus(422)
+    if (limit === 0 || !Number.isInteger(limit) || limit<0) return res.sendStatus(422)
     if (limit) {
         db.collection("messages").find({ $or: [{ from: user }, { to: 'Todos' }, { to: user }] }).toArray()
             .then(msgs => res.send(msgs.slice(-limit)))
