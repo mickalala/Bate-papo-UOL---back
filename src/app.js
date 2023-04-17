@@ -27,6 +27,7 @@ app.post("/participants", async (req, res) => {
 try{
     const newUser= await db.collection("participants").findOne({name: name})
     if (newUser) return res.status(409).send("Esse user já existe!")
+
     await db.collection("participants").insertOne({
         name: name,
         lastStatus: Date.now()
@@ -38,7 +39,8 @@ try{
         type: 'status',
         time: dayjs().format('HH:mm:ss')
     })
-} catch(err) {
+    res.sendStatus(201)
+} catch (err) {
     res.status(500).send(err.message)
 }
 })
