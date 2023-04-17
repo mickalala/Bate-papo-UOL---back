@@ -30,7 +30,6 @@ app.post("/participants", (req, res) => {
     const validate = nameSchema.validate(req.body)
     if (validate.error) return res.sendStatus(422)
 
-
     db.collection("participants").insertOne({
         name: name,
         lastStatus: Date.now()
@@ -69,6 +68,20 @@ app.post("/messages", (req, res) => {
         .then(()=>res.sendStatus(201))
         .catch(err=>res.send(500))
 
+})
+
+app.get("/messages", (req,res)=>{
+    db.collection("messages").find().toArray()
+    .then(msgs=> res.send(msgs))
+    .catch(()=> res.sendStatus(500))
+})
+
+
+app.post("/status",(req, res)=>{
+    const user= req.headers.user
+    if(!user)return res.sendStatus(404)
+    const list= db.collectio("participants").findOne({name: user})
+    if(!list) return res.sendStatus(404)
 })
 
 const PORT = 5000;
