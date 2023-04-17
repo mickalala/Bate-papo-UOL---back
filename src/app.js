@@ -26,20 +26,18 @@ const messageSchema = joi.object({
 mongoClient.connect().then(() => db = mongoClient.db())
 
 app.post("/participants", (req, res) => {
-    const { nameBody } = req.body
+    const { name } = req.body
     const validate = nameSchema.validate(req.body)
     if (validate.error) return res.sendStatus(422)
 
 
-
-    console.log(dayjs().format('HH:mm:ss'))
     db.collection("participants").insertOne({
-        name: nameBody,
+        name: name,
         lastStatus: Date.now()
     }).then(() => res.sendStatus(201))
         .catch(() => res.sendStatus(500))
     db.collection("messages").insertOne({
-        from: nameBody,
+        from: name,
         to: 'Todos',
         text: 'entra na sala...',
         type: 'status',
@@ -55,7 +53,23 @@ app.get("/participants", (req, res) => {
 })
 
 app.post("/messages", (req, res) => {
+    const { to, text, type } = req.body
+    const user= req.headers.user
+    const messageValid= messageSchema.validate(req.body)
+    if (messageValid.error) return res.sendStatus(422)
+
+    db.collection("messages").insertOne(
+        {
+            from: user,
+            to: to,
+            text: text,
+            type: type,
+            time: dayjs().format('HH:mm:ss')
+        })
+        .then(()=>res.sendStatus(201))
+        .catch(err=>res.send(500))
 
 })
+
 const PORT = 5000;
 app.listen(PORT, () => console.log(`tá rodando na portaaa ${PORT}`))
