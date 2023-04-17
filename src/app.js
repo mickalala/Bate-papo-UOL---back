@@ -24,25 +24,25 @@ app.post("/participants", async (req, res) => {
     const { name } = req.body
     const validate = nameSchema.validate(req.body)
     if (validate.error) return res.sendStatus(422)
-try{
-    const newUser= await db.collection("participants").findOne({name: name})
-    if (newUser) return res.status(409).send("Esse user já existe!")
+    try {
+        const newUser = await db.collection("participants").findOne({ name: name })
+        if (newUser) return res.status(409).send("Esse user já existe!")
 
-    await db.collection("participants").insertOne({
-        name: name,
-        lastStatus: Date.now()
-    })
-   await db.collection("messages").insertOne({
-        from: name,
-        to: 'Todos',
-        text: 'entra na sala...',
-        type: 'status',
-        time: dayjs().format('HH:mm:ss')
-    })
-    res.sendStatus(201)
-} catch (err) {
-    res.status(500).send(err.message)
-}
+        await db.collection("participants").insertOne({
+            name: name,
+            lastStatus: Date.now()
+        })
+        await db.collection("messages").insertOne({
+            from: name,
+            to: 'Todos',
+            text: 'entra na sala...',
+            type: 'status',
+            time: dayjs().format('HH:mm:ss')
+        })
+        res.sendStatus(201)
+    } catch (err) {
+        res.status(500).send(err.message)
+    }
 })
 
 app.get("/participants", (req, res) => {
@@ -80,18 +80,33 @@ app.post("/messages", (req, res) => {
 
 app.get("/messages", (req, res) => {
     const user = req.headers.user
+    const limit = Number(req.query.limit)
+    console.log(limit)
+    if (limit === 0 || !Number.isInteger(limit)) return res.sendStatus(422)
+    if (limit) {
+        db.collection("messages").find({ $or: [{ from: user }, { to: 'Todos' }, { to: user }] }).toArray()
+            .then(msgs => res.send(msgs.slice(-limit)))
+            .catch(() => res.sendStatus(500))
+    }
 
-    db.collection("messages").find({$or:[{from: user}, {to: 'Todos'}, {to: user}]}).toArray()
+    db.collection("messages").find({ $or: [{ from: user }, { to: 'Todos' }, { to: user }] }).toArray()
         .then(msgs => res.send(msgs))
         .catch(() => res.sendStatus(500))
 })
 
 
-app.post("/status", (req, res) => {
+app.post("/status", async (req, res) => {
+
     const user = req.headers.user
-    if (!user) return res.sendStatus(404)
-    const list = db.collectio("participants").findOne({ name: user })
-    if (!list) return res.sendStatus(404)
+    try {
+        if (!user) return res.sendStatus(404)
+        const list = await db.collection("participants").findOne({ name: user })
+        if (!list) return res.sendStatus(404)
+        res.sendStatus(200)
+    } catch (err) {
+        res.sendStatus(404)
+    }
+
 })
 
 const PORT = 5000;
