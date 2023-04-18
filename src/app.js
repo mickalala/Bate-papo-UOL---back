@@ -54,14 +54,14 @@ app.get("/participants", (req, res) => {
 app.post("/messages", (req, res) => {
     const { to, text, type } = req.body
     const user = req.headers.user
-    const seeList =  db.collection("participants").findOne({name:user})
+    const seeList = db.collection("participants").findOne({ name: user })
 
-   if(!user || !seeList) return res.sendStatus(422)
+    if (!user || !seeList) return res.sendStatus(422)
 
     const messageSchema = joi.object({
         to: joi.string().required(),
         text: joi.string().required(),
-        type: joi.any().valid('message', 'private_message').required
+        type: joi.any().valid('message', 'private_message').required()
     })
 
     const messageValid = messageSchema.validate(req.body)
@@ -83,12 +83,14 @@ app.post("/messages", (req, res) => {
 
 app.get("/messages", (req, res) => {
     const user = req.headers.user
-    const limit = Number(req.query.limit)
+    const limit = req.query.limit
     console.log(limit)
-    if (limit === 0 || !Number.isInteger(limit) || limit<0) return res.sendStatus(422)
-    if (limit) {
+    const limitnum= Number(limit)
+    if(limitnum===0) return res.sendStatus(422)
+    if (limitnum) {
+        if (limitnum <= 0 || !Number.isInteger(limitnum)) return res.sendStatus(422)
         db.collection("messages").find({ $or: [{ from: user }, { to: 'Todos' }, { to: user }] }).toArray()
-            .then(msgs => res.send(msgs.slice(-limit)))
+            .then(msgs => res.send(msgs.slice(-limitnum)))
             .catch(() => res.sendStatus(500))
     }
 
@@ -105,12 +107,20 @@ app.post("/status", async (req, res) => {
         if (!user) return res.sendStatus(404)
         const list = await db.collection("participants").findOne({ name: user })
         if (!list) return res.sendStatus(404)
+        const updateUser= await db.collection("participants")
+        .updateOne(
+           {name:user},
+           {$set:{
+            lastStatus: Date.now()
+           }}
+        )
         res.sendStatus(200)
     } catch (err) {
         res.sendStatus(404)
     }
 
 })
+
 
 const PORT = 5000;
 app.listen(PORT, () => console.log(`tá rodando na portaaa ${PORT}`))
